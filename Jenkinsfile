@@ -14,7 +14,6 @@ pipeline {
 
         stage('Environment Check') {
             steps {
-                sh 'echo $JAVA_HOME'
                 sh 'which java'
                 sh 'which javac'
                 sh 'which mvn'
@@ -34,25 +33,18 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests=true'
-                junit stdioRetention: '', testResults: 'target/surefire-reports/TEST-*.xml'
+                archiveArtifacts artifacts: 'target/*.jar'
             }
         }
 
-        stage('Unit Test') {
+        stage('Test') {
             steps {
                 sh 'mvn test'
-            }
 
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Archive Artifact') {
-            steps {
-                archiveArtifacts artifacts: 'target/*.jar'
+                junit(
+                    testResults: 'target/surefire-reports/TEST-*.xml',
+                    keepLongStdio: true
+                )
             }
         }
 
