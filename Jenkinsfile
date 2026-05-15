@@ -34,6 +34,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests=true'
+                junit stdioRetention: '', testResults: 'target/surefire-reports/TEST-*.xml'
             }
         }
 
