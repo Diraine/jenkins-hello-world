@@ -1,5 +1,9 @@
 pipeline {
     agent any
+    environment {
+        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+    }
 
     tools {
         // Install the Maven version configured as "maven-398" and add it to the path.
