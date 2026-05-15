@@ -1,62 +1,66 @@
 pipeline {
     agent any
+
     environment {
         JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
         PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
 
     tools {
-        // Install the Maven version configured as "maven-398" and add it to the path.
-        maven "maven-398"
+        maven 'maven-398'
     }
 
     stages {
-        stage('Check Maven') {
+
+        stage('Environment Check') {
             steps {
-                sh "if ! command -v mvn; then echo 'Maven not found!'; exit 1; fi"
+                sh 'echo $JAVA_HOME'
+                sh 'which java'
+                sh 'which javac'
+                sh 'which mvn'
+                sh 'java -version'
+                sh 'javac -version'
+                sh 'mvn -version'
+            }
+        }
+
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                url: 'https://github.com/Diraine/jenkins-hello-world.git'
             }
         }
 
         stage('Build') {
             steps {
-                git branch: 'main', url: 'https://github.com/Diraine/jenkins-hello-world.git'
-                sh "mvn clean package -DskipTests=true"
+                sh 'mvn clean package -DskipTests=true'
             }
         }
 
         stage('Unit Test') {
             steps {
-                sh "mvn test"
+                sh 'mvn test'
+            }
+
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Archive Artifact') {
+            steps {
+                archiveArtifacts artifacts: 'target/*.jar'
+            }
+        }
+
+        stage('Integration Testing') {
+            steps {
+                sh 'echo Running integration tests...'
+                sh 'sleep 10'
+                sh 'echo Integration testing completed'
             }
         }
     }
-}
-pipeline {
-  agent any
-  stages {
-    stage('Build') {
-      steps {
-        sh 'mvn clean package -DskipTests=true'
-        archiveArtifacts 'target/hello-demo-*.jar'
-      }
-    }
-
-    stage('Test') {
-      steps {
-        sh 'mvn test'
-        junit(testResults: 'target/surefire-reports/TEST-*.xml', keepProperties: true, keepTestNames: true)
-      }
-    }
-    
-    stage('Integration Testing') {
-      steps {
-        sh "sleep 10s"
-        sh 'echo Testing using cURL commands......'
-      }
-    }
-  }
-  tools {
-    maven 'M398'
-  }
-
 }
