@@ -33,6 +33,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests=true'
+
                 archiveArtifacts artifacts: 'target/*.jar'
             }
         }
@@ -48,19 +49,42 @@ pipeline {
             }
         }
 
+        stage('Run Application') {
+            steps {
+
+                sh '''
+                    nohup java -jar target/*.jar \
+                    --server.port=${APPLICATION_PORT} \
+                    > app.log 2>&1 &
+                '''
+
+                sh 'echo Waiting for application to start...'
+
+                sh "sleep ${params.SLEEP_TIMER}"
+
+                sh 'cat app.log'
+            }
+        }
+
         stage('Integration Testing') {
             steps {
+
                 sh 'echo Running integration tests...'
-                sh "echo Sleeping for ${params.SLEEP_TIMER}"
-                sh "sleep ${params.SLEEP_TIMER}"
 
                 sh "echo Running integration tests on port ${params.APPLICATION_PORT}"
 
                 sh """
                     curl -v http://localhost:${params.APPLICATION_PORT}/hello
                 """
+
                 sh 'echo Integration testing completed'
             }
+        }
+    }
+
+    post {
+        always {
+            sh 'pkill -f "java -jar" || true'
         }
     }
 }
