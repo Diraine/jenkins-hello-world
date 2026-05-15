@@ -67,19 +67,29 @@ pipeline {
         }
 
         stage('Integration Testing') {
-            steps {
+    steps {
 
-                sh 'echo Running integration tests...'
+        sh '''
+            echo "Waiting for application readiness..."
 
-                sh "echo Running integration tests on port ${params.APPLICATION_PORT}"
+            for i in {1..30}; do
+                if curl -s http://localhost:${APPLICATION_PORT}/hello > /dev/null; then
+                    echo "Application is ready!"
+                    break
+                fi
 
-                sh """
-                    curl -v http://localhost:${params.APPLICATION_PORT}/hello
-                """
+                echo "Waiting for application..."
+                sleep 2
+            done
+        '''
 
-                sh 'echo Integration testing completed'
-            }
-        }
+        sh """
+            curl -v http://localhost:${params.APPLICATION_PORT}/hello
+        """
+
+        sh 'echo Integration testing completed'
+    }
+}
     }
 
     post {
